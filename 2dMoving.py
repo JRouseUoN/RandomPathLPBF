@@ -7,6 +7,8 @@ This is a temporary script file.
 import numpy as np
 import matplotlib.pyplot as plt
 
+#A program to predict the transient thermal response of a moving 2D heat source
+
 # Parameters
 Lx, Ly = 10.0, 10.0  # Length of the plane in x and y directions
 T = 50.0   # Total time

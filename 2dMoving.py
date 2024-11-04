@@ -32,6 +32,9 @@ source_amplitude = 80.0
 source_width = 0.1
 source_speed = 2.0
 
+source_centre=np.array((1,5))
+               
+
 # Time-stepping loop
 for n in range(1, Nt):
     for i in range(1, Nx-1):
@@ -44,13 +47,15 @@ for n in range(1, Nt):
     source_index_x = int(source_position / dx)
     
     if source_index_x < Nx:
-        for j in range(Ny):
-            u[n, source_index_x, j] += source_amplitude * np.exp(-((source_position - source_index_x*dx) / source_width)**2)
+        u[n, source_index_x, j] += source_amplitude * np.exp(-((source_position - source_index_x*dx) / source_width)**2)
+        source_centre[0]=int(source_centre[0]+(source_speed*dt))
+        #for j in range(Ny):
+        #    u[n, source_index_x, j] += source_amplitude * np.exp(-((source_position - source_index_x*dx) / source_width)**2)
 
 # Plot the results
 plt.figure(figsize=(10, 6))
 X, Y = np.meshgrid(np.linspace(0, Lx, Nx), np.linspace(0, Ly, Ny))
-for n in range(0, Nt, Nt // 1):
+for n in range(0, Nt, Nt // 100):
     plt.contourf(X, Y, u[n].T, levels=50, cmap='hot')
     plt.colorbar()
     plt.title(f'Temperature distribution at t={n*dt:.2f}s')

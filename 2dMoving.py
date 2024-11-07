@@ -18,9 +18,9 @@ def gaussian(x, y, mu_x, mu_y, sigma_x, sigma_y):
 
 # Parameters
 Lx, Ly = 100, 100  # Length of the plane in x and y directions
-T = 2.0   # Total time
+T = 4.0   # Total time
 Nx, Ny = 500, 500  # Number of spatial points in x and y directions
-Nt = 80  # Number of time points
+Nt = (np.rint(40*T)).astype(int)  # Number of time points
 
 density=7.8e-6 # kg/mm^3
 thermal_conductivity=45e-3 # W/mmK
@@ -43,7 +43,7 @@ sigma_y = 1.5
 # Moving heat source parameters
 source_amplitude = 0.1
 # source_width = 0.1
-source_speed = 20
+source_speed = 30
 
 
 
@@ -79,6 +79,7 @@ for i in range(1, Nx-1):
         A[index, index - 1] = alpha * dt / dy**2
         A[index, index + 1] = alpha * dt / dy**2
         
+T_track=0
 
 # Time-stepping loop
 for n in range(1, Nt,1):
@@ -86,21 +87,23 @@ for n in range(1, Nt,1):
     deltaT=A.dot(b)
     T_new_flattened=b+(deltaT*dt)
     u[n,:,:]=T_new_flattened.reshape((Nx, Ny))
-    # Evaluate heat source
-    heat_source_temp = gaussian(x_mat, y_mat, mu_x, mu_y, sigma_x, sigma_y)    
-    heat_source_temp = heat_source_temp*source_amplitude
-    heat_source[n,:,:] = heat_source_temp
-    # Apply heat source to temperature field
-    u_temp=heat_source_temp*(1/(dx*dy*thickness*density))*(1/specific_heat)
-    u[n, :, :]=u[n, :, :]+u_temp
-    #Ensure outer edge is constant temperature
-    u[n, 0, :]=initial_temperature
-    u[n, Nx-1, :]=initial_temperature
-    u[n, :, 0]=initial_temperature
-    u[n, :, Ny-1]=initial_temperature
-    # Update heat source location
-    mu_x=mu_x+(source_speed*dt)
-    mu_y=mu_y+(source_speed*dt)
+    T_track=T_track+dt
+    if T_track<2:
+        # Evaluate heat source
+        heat_source_temp = gaussian(x_mat, y_mat, mu_x, mu_y, sigma_x, sigma_y)    
+        heat_source_temp = heat_source_temp*source_amplitude
+        heat_source[n,:,:] = heat_source_temp
+        # Apply heat source to temperature field
+        u_temp=heat_source_temp*(1/(dx*dy*thickness*density))*(1/specific_heat)
+        u[n, :, :]=u[n, :, :]+u_temp
+        #Ensure outer edge is constant temperature
+        u[n, 0, :]=initial_temperature
+        u[n, Nx-1, :]=initial_temperature
+        u[n, :, 0]=initial_temperature
+        u[n, :, Ny-1]=initial_temperature
+        # Update heat source location
+        mu_x=mu_x+(source_speed*dt)
+        mu_y=mu_y+(source_speed*dt)
     print(n)
 
 

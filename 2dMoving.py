@@ -4,6 +4,7 @@ Spyder Editor
 """
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.sparse import lil_matrix, csr_matrix
 
 #A program to predict the transient thermal response of a moving 2D heat source
 
@@ -18,7 +19,7 @@ def gaussian(x, y, mu_x, mu_y, sigma_x, sigma_y):
 # Parameters
 Lx, Ly = 100, 100  # Length of the plane in x and y directions
 T = 1.0   # Total time
-Nx, Ny = 2000, 2000  # Number of spatial points in x and y directions
+Nx, Ny = 500, 500  # Number of spatial points in x and y directions
 Nt = 10  # Number of time points
 
 density=7.8e-6 # kg/mm^3
@@ -54,17 +55,6 @@ y_mat=np.ones((Nx,Ny))
 for i in range(0,Ny,1):
     y_mat[i,:]=y_mat[i,:]*(i*dy)
 
-
-# # Stability condition
-# if alpha * dt / dx**2 > 0.25 or alpha * dt / dy**2 > 0.25:
-#     print("***")
-#     print("***")
-#     print (alpha * dt / dx**2)
-#     print("***")
-#     print("***")
-#     raise ValueError("Stability condition violated. Reduce dt or increase dx/dy.")
-    
-
 # Initial temperature distribution
 u = np.zeros((Nt, Nx, Ny))
 heat_source = np.zeros((Nt, Nx, Ny))
@@ -80,17 +70,28 @@ u_temp=heat_source_temp*(1/(dx*dy*thickness*density))*(1/specific_heat)
 u[0, :, :]=u[0, :, :]+u_temp
 mu_y=mu_y+(source_speed*dt)
 
+
+# Coefficient matrix A
+A = lil_matrix((Nx*Ny, Nx*Ny))
+for i in range(1, Nx-1):
+    for j in range(1, Ny-1):
+        index = i * Ny + j
+        A[index, index] = -2 * alpha * dt / dx**2 - 2 * alpha * dt / dy**2 - 1
+        A[index, index - Ny] = alpha * dt / dx**2
+        A[index, index + Ny] = alpha * dt / dx**2
+        A[index, index - 1] = alpha * dt / dy**2
+        A[index, index + 1] = alpha * dt / dy**2
+        
+
 # Time-stepping loop
-for n in range(1, Nt):
+for n in range(1, Nt,1):
+    b = u[n-1,:,:].flatten()
+    deltaT=A.dot(b)
+    T_new_flattened=b+(deltaT*dt)
+    u[n,:,:]=T_new_flattened.reshape((Nx, Ny))
     
     
     
-    
-    
-    for i in range(1, Nx-1):
-        for j in range(1, Ny-1):
-            u[n, i, j] = (u[n-1, i, j] + alpha * dt / dx**2 * (u[n-1, i+1, j] - 2*u[n-1, i, j] + u[n-1, i-1, j]) +
-                          alpha * dt / dy**2 * (u[n-1, i, j+1] - 2*u[n-1, i, j] + u[n-1, i, j-1]))
     # Evaluate heat source
     # heat_source_temp = gaussian(x_mat, y_mat, mu_x, mu_y, sigma_x, sigma_y)    
     # heat_source_temp = heat_source_temp*source_amplitude
